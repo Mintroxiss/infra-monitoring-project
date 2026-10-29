@@ -1,0 +1,47 @@
+name: Проверка скриптов
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-scripts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Скачивание кода репозитория
+        uses: actions/checkout@v4
+
+      - name: Проверка синтаксиса скриптов
+        run: |
+          bash -n check_api.sh
+          bash -n analyze_logs.sh
+
+      - name: Выдача прав на запуск
+        run: chmod +x check_api.sh analyze_logs.sh
+
+      - name: Запуск check_api.sh (код 0)
+        run: ./check_api.sh https://httpbin.org/status/200
+
+      - name: Запуск check_api.sh (код 1)
+        run: |
+          set +e
+          ./check_api.sh https://httpbin.org/status/404
+          code=$?
+          echo "Код возврата: $code"
+          test "$code" -eq 1
+
+      - name: Запуск analyze_logs.sh (код 0)
+        run: |
+          ./analyze_logs.sh -g
+          cat access.log
+
+      - name: Запуск analyze_logs.sh (код 1)
+        run: |
+          set +e
+          ./analyze_logs.sh /нет/такого/файла.log
+          code=$?
+          echo "Код возврата: $code"
+          test "$code" -eq 1
